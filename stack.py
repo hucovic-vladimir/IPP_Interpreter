@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Union, Tuple
 
 class Stack:
     def __init__(self) -> None:
@@ -24,4 +24,9 @@ class Stack:
 
     def empty(self) -> bool:
         return len(self.stack) == 0
+    
+    def elementCount(self) -> int:
+        return len(self.stack)
 
+    def clear(self) -> None:
+        self.stack.clear() 

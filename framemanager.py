@@ -3,6 +3,7 @@ from stack import *
 from variable import *
 from typing import List, Any, Optional
 import argparse as ap
+import sys
 
 class FrameManager:
     globalFrame = Frame("GF")
@@ -13,9 +14,12 @@ class FrameManager:
     @classmethod
     def PopFrame(cls) -> None:
         cls.tempFrame = cls.frameStack.pop()
-    
+   
     @classmethod
     def PushFrame(cls) -> None:
+        if(cls.tempFrame is None):
+            print("Chyba: Pokus o umisteni neexistujiciho ramce na zasobnik!", file=sys.stderr)
+            exit(55)
         cls.frameStack.push(cls.tempFrame)
         cls.tempFrame = None
 
@@ -25,19 +29,11 @@ class FrameManager:
 
     @classmethod
     def AddToFrame(cls, frame_type: str, variable: Variable) -> None:
-        if (frame_type == 'GF'):
-            cls.globalFrame.variables.append(variable)
-        elif (frame_type == 'LF'):
-            try:
-                cls.frameStack.top().variables.append(variable)
-            except IndexError:
-                print("Error: LF not defined!")
-                exit(55)
-        elif (frame_type == 'TF'):
-            if(cls.tempFrame is None):
-                print("Error: TF not defined!")
-                exit(55)
-            cls.tempFrame.variables.append(variable)
+        frame = cls.GetFrame(frame_type)
+        if(frame is None):
+            print(f"Chyba: Ramec {frame_type} neni definovan!", file=sys.stderr)
+            exit(55)
+        frame.AddVariable(variable)
 
     @classmethod
     def GetFrame(cls, frame_type: str) -> Optional[Frame]:
@@ -48,8 +44,8 @@ class FrameManager:
         elif (frame_type == 'TF'):
             return cls.tempFrame
         else:
-            print("Error: Unknown frame type!")
-            exit(55)
+            print("Chyba: Neznamy typ ramce!", file=sys.stderr)
+            exit(32)
   
     @classmethod
     def SearchVariable(cls, var: str)-> Optional[Variable]:
@@ -61,43 +57,20 @@ class FrameManager:
             return cls.frameStack.top().GetVariable(name)
         elif (frame == 'TF'):
             if(cls.tempFrame is None):
-                print("Error: TF not defined!")
+                print("Chyba: Docasny ramec neni definovan!", file=sys.stderr)
                 exit(55)
             return cls.tempFrame.GetVariable(name)
-
-def GetArguments():
-    parser = ap.ArgumentParser(add_help=False)
-    parser.add_argument('--help', action='store_true',
-                        help='Vypíše tuto nápovědu')
-    parser.add_argument('--input', nargs=1, type=str,
-                        help='Cesta k souboru se vstupy pro program (Výchozí je standardní vstup)')
-    parser.add_argument('--source', nargs=1, type=str,
-                        help='Cesta ke vstupnímu souboru s XML reprezentací programu (Výchozí je standardní vstup)')
-
-    try:
-        args, unknown_args = parser.parse_known_args()
-    except ap.ArgumentError:
-        exit(10)
-
-    if (unknown_args):
-        print("Neznáme argumenty: " + str(unknown_args))
-        parser.print_help()
-        exit(10)
-
-    if args.help and len([value for value in vars(args).values() if value]) > 1:
-        print('Parametr --help nelze použít s jinými parametry!')
-        exit(10)
-
-    if (not args.input and not args.source):
-        print('Alespoň jeden z parametrů --input nebo --source musí být zadán!')
-        exit(10)
-
-    if (args.help):
-        parser.print_help()
-        exit(0)
-
-    return args
-
-
-
-
+    
+    @classmethod
+    def UpdateVariable(cls, var: str, value: Any) -> None:
+        frame = var.split('@')[0]
+        name = var.split('@')[1]
+        if (frame == 'GF'):
+            cls.globalFrame.UpdateVariable(name, value)
+        elif (frame == 'LF'):
+            cls.frameStack.top().UpdateVariable(name, value)
+        elif (frame == 'TF'):
+            if(cls.tempFrame is None):
+                print("Chyba: Docasny ramec neni definovan!", file=sys.stderr)
+                exit(55)
+            cls.tempFrame.UpdateVariable(name, value)
