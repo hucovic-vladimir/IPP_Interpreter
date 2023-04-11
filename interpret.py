@@ -9,6 +9,7 @@ from stack import *
 from framemanager import *
 from instruction import *
 import re 
+from dataTypes import *
 def getArguments() -> ap.Namespace:
     parser = ap.ArgumentParser(add_help=False)
     parser.add_argument('--help', action='store_true',
@@ -49,31 +50,30 @@ def getArguments() -> ap.Namespace:
 def checkXML(root: et.Element) -> bool:
     # Chybny korenovy element
     if(root.tag != 'program'):
-        print(f"Neočekávaný kořenový element: {root.tag}, očekáván '<program>!'", file=sys.stderr)
-        return False
-
+        raise XMLInputError(f"Neočekávaný element: {root.tag}, očekáván '<program>!'")
     # Chybi language atribut
     if('language' not in root.attrib):
-        print("Kořenový element neobsahuje atribut 'language'!", file=sys.stderr)
-        return False
+        raise XMLInputError("Chyba: Element 'program' neobsahuje atribut 'language'!")
 
     # Chybna hodnota language atributu
     if(root.attrib['language'].lower() != 'ippcode23'):
-        print(f"Neočekávaná hodnota atributu 'language': {root.attrib}, očekáváno IPPcode23!", file=sys.stderr)
-        return False
+        raise XMLInputError("Chyba: Element 'program' obsahuje chybný atribut 'language'!")
 
+    order = set()
     for element in root:
         # Jiny element nez instrukce
         if(element.tag != 'instruction'):
-            print(f"Neočekávaný element: {element.tag}, očekáván '<instruction>!'", file=sys.stderr)
-            return False
+            raise XMLInputError(f"Neočekávaný element: {element.tag}, očekáván '<instruction>!'")
         else:
             if('order' not in element.attrib):
-                print("Instrukce neobsahuje atribut 'order'!", file=sys.stderr)
-                return False
+                raise XMLInputError("Chyba: Instrukce neobsahuje atribut 'order'!")
+            if(not element.attrib['order'].isdigit()):
+                raise XMLInputError("Chyba: Atribut 'order' není celé číslo!")
+            if(int(element.attrib['order']) in order):
+                raise XMLInputError("Chyba: Duplicitní pořadí instrukce!")
             if(int(element.attrib['order']) < 1):
-                print("Nalezeno záporné nebo nulové pořadí instrukce!", file=sys.stderr)
-                return False
+                raise XMLInputError("Chyba: Nalezeno záporné nebo nulové pořadí instrukce!")
+            order.add(int(element.attrib['order']))
     return True
 
 
@@ -102,7 +102,10 @@ if (__name__ == '__main__'):
 
     # Ziskani korene a kontrola struktury
     root = tree.getroot()
-    if(not checkXML(root)):
+    try:
+        checkXML(root)
+    except XMLInputError as e:
+        print(e, file=sys.stderr)
         exit(32)
 
     instructions = root.findall('instruction')
@@ -112,10 +115,14 @@ if (__name__ == '__main__'):
     # Vytvoreni objektu instrukci
     instructionObjects: List[Instruction] = []
     for element in sorted_instructions:
-        instObj = Instruction.Create(element)
-        instructionObjects.append(instObj)
+        try:
+            instObj = Instruction.CreateInstruction(element)
+            instructionObjects.append(instObj)
+        except XMLInputError as e:
+            print(e, file=sys.stderr)
+            exit(32) 
   
-    
     interpreter = Interpreter(instructionObjects, inputFile)
     interpreter.Interpret()
-   
+  
+

@@ -1,80 +1,85 @@
-from framemanager import FrameManager
 import xml.etree.ElementTree as et
 import sys
+from typing import Union, Optional, List
+from dataTypes import *
+
+# Tato třída reprezentuje jméno proměnné
+class VarName:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"{self.name}"
+
 # Tato třída reprezentuje argumenty instrukce
-# atribut type určuje typ argumentu, tedy "var" u proměnných a 
-# "int", "float", "bool", "string", "nil" u konstant, nebo "type" u typu, "label" u navesti
-# atribut value obsahuje buď jméno proměnné nebo hodnotu konstanty
+# atribut type určuje, zda jde o proměnnou nebo konstantu 
 class Argument:
-    def __init__(self, type, value):
+    def __init__(self, value: Union[IPPFloat, IPPInt, IPPString, IPPBool, Nil, VarName]):
         self.value = value
-        self.type = type
 
-    def __str__(self):
-        return f"{self.value}" 
-    
-    def GetArgValue(self):
-        if(self.type == 'var'):
-            var = FrameManager.SearchVariable(self.value)
-            if(var is None):
-                print(f"Chyba: Promenna {self.value} neni definovana!", file=sys.stderr)
-                exit(54)
-            return var.value
-        else:
-            return self.value
+    def __str__(self) -> str:
+        return f"{self.value}"
 
-    def GetArgDataType(self):
-        if(self.type == 'var'):
-            var = FrameManager.SearchVariable(self.value)
-            if(var is None):
-                print(f"Chyba: Promenna {self.value} neni definovana!", file=sys.stderr)
-                exit(54)
-            return var.type
+class ArgumentFactory:
+    @classmethod
+    def Create(cls, arg: et.Element) -> Optional[Argument]:
+        type = arg.attrib["type"]
+        if(type == "var"):
+            if(arg.text is None):
+                return None
+            return Argument(VarName(arg.text))
+        elif (type == "int" or type == "float" or type == "bool" or type == "string" or type == "nil"):
+            return ArgumentFactory.CreateConstantArgument(arg)
+        elif (type == "type" or type == "label"):
+            if(arg.text is None):
+                return None
+            return Argument(IPPString(arg.text))
         else:
-            return self.type
+            return None
 
     @classmethod
-    def CreateArgument(cls, arg: et.Element):
+    def CreateConstantArgument(cls, arg: et.Element) -> Optional[Argument]:
         type = arg.attrib["type"]
-        value = arg.text
-        if(value is None):
-            print("Chyba: Chybejici hodnota v argumentu instrukce!" , file=sys.stderr)
-            exit(32)
-        # pokud jde o promennou, vytvori se argument s hodnotou jmena promenne
-        if(type == 'var'):
-            return Argument(type, value)
-        # pokud jde o konstantu, hodnota se prevede z retezce na odpovidajici typ
-        else:
-            if(type == "nil"):
-                return Argument(type, "nil")
-            if(type == "bool"):
-                return Argument(type, value == "true")
-            if(type == "int"):
-                try:
-                    # hexadecimalni cele cislo
-                    if(value.startswith("-0x") or value.startswith("+0x") or value.startswith("0x")):
-                        return Argument(type, int(value, 16))
-                    # oktalove cele cislo
-                    elif(value.startswith("-0") or value.startswith("+0") or value.startswith("0") and len(value) > 1):
-                        return Argument(type, int(value[1:], 8))
-                    # desitkove cele cislo
-                    return Argument(type, int(value))
-                except ValueError:
-                    print(f"Chyba: Neplatna celociselna hodnota '{value}' v argumentu!", file=sys.stderr)
-                    exit(32)
-            if(type == "float"):
-                try:
-                    if(value.startswith("-0x") or value.startswith("0x") or value.startswith("+0x")):
-                        return Argument(type, float.fromhex(value))
-                    else:
-                        return Argument(type, float(value)) 
-                except ValueError:
-                    print(f"Chyba: Neplatna float hodnota v argumentu! {value}!", file=sys.stderr)
-                    exit(32)
-
-            elif(type == "string" or type == "type" or type == "label" or type == "nil"):
-                return Argument(type, value)
-            else:
-                print(f"Error: Invalid argument type {type}!", file=sys.stderr)
+        if(type == "string"):
+            if(arg.text is None):
+                return Argument(IPPString(""))
+            return Argument(IPPString(arg.text))
+        if(arg.text is None):
+            return None
+        if(type == "nil"):
+            return Argument(Nil()) 
+        if(type == "bool"):
+            return Argument(IPPBool(arg.text == "true"))
+        if(type == "int"):
+            try:
+                # hexadecimalni cele cislo
+                if(arg.text.startswith("-0x") or arg.text.startswith("+0x") or arg.text.startswith("0x")):
+                    return Argument(IPPInt(int(arg.text, 16)))
+                # oktalove cele cislo
+                elif(arg.text.startswith("-0") or arg.text.startswith("+0") or arg.text.startswith("0") and len(arg.text) > 1):
+                    return Argument(IPPInt(int(arg.text[1:], 8)))
+                # desitkove cele cislo
+                return Argument(IPPInt(int(arg.text)))
+            except ValueError:
+                print(f"Chyba: Neplatna celociselna hodnota '{arg.text}' v argumentu!", file=sys.stderr)
                 exit(32)
+        if(type == "float"):
+            if(arg.text is None):
+                print("Chyba: Chybejici hodnota v argumentu instrukce!" , file=sys.stderr)
+                exit(32)
+            try:
+                # hexadecimalni floating point cislo
+                if(arg.text.startswith("-0x") or arg.text.startswith("0x") or arg.text.startswith("+0x")
+                   or arg.text.endswith("p-") or arg.text.endswith("p+") or arg.text.endswith("p")):
+                    return Argument(IPPFloat(float.fromhex(arg.text)))
+                # dekadicke floating point cislo
+                return Argument(IPPFloat(float(arg.text)))
+            except ValueError:
+                print(f"Chyba: Neplatne desetinne cislo '{arg.text}' v argumentu!", file=sys.stderr)
+                exit(32)
+        if (type == "type"):
+            return Argument(IPPString(arg.text))
+        if (type == "label"):
+            return Argument(IPPString(arg.text))
+        return None
 
