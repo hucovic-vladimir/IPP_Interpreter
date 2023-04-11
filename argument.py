@@ -53,16 +53,14 @@ class ArgumentFactory:
             return Argument(IPPBool(text == "true"))
         if(type == "int"):
             try:
-                return Argument(IPPInt(int(text)))
-            except ValueError:
-                print(f"Chyba: Neplatna celociselna hodnota '{arg.text}' v argumentu!", file=sys.stderr)
-                exit(32)
+                return Argument(IPPInt(text))
+            except InvalidStringToIntError:
+                raise XMLInputError(f"Pokus: o prevod neplatneho retezce na int! {text}")
         if(type == "float"):
             try:
-                return Argument(IPPFloat(float(text)))
-            except ValueError:
-                print(f"Chyba: Neplatne desetinne cislo '{arg.text}' v argumentu!", file=sys.stderr)
-                exit(32)
+                return Argument(IPPFloat(text))
+            except InvalidStringToFloatError:
+                raise XMLInputError(f"Pokus: o prevod neplatneho retezce na float! {text}")
         if (type == "type"):
             return Argument(IPPString(text))
         if (type == "label"):

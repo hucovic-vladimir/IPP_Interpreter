@@ -33,7 +33,7 @@ def getArguments() -> ap.Namespace:
         print('Parametr --help nelze použít s jinými parametry!', file=sys.stderr)
         exit(10)
 
-    if (not args.input and not args.source):
+    if (not args.input and not args.source and not args.help):
         print('Alespoň jeden z parametrů --input nebo --source musí být zadán!', file=sys.stderr)
         exit(10)
 
