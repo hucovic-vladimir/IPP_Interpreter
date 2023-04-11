@@ -1,4 +1,3 @@
-from variable import *
 from typing import List, Union
 from dataTypes import *
 from exceptions import *

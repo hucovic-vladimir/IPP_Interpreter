@@ -4,9 +4,7 @@ import argparse as ap
 from typing import List, Optional, Any
 from interpreter import *
 from frame import *
-from variable import *
 from stack import *
-from framemanager import *
 from instruction import *
 import re 
 from dataTypes import *

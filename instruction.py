@@ -1,5 +1,4 @@
 from typing import List
-from variable import *
 from xml.etree.ElementTree import Element, tostring
 import xml.etree.ElementTree as et
 from argument import *
@@ -150,8 +149,7 @@ class Instruction:
             if(userInput == ""):
                 interpreterData.UpdateVariable(str(self.args[0].value), Nil())
                 return
-            # odstrani znak noveho radku
-            userInput = userInput[:-1]
+            userInput = userInput.strip("\n")
             if(argValue == IPPString("int")):
                 try:
                     result = IPPInt(userInput)

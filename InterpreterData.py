@@ -1,5 +1,4 @@
 from frame import *
-from variable import *
 from exceptions import *
 from argument import *
 from stack import *

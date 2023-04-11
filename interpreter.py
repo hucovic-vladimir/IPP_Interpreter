@@ -1,5 +1,3 @@
-from variable import *
-from framemanager import *
 from stack import *
 from xml.etree import ElementTree as et
 from instruction import *
