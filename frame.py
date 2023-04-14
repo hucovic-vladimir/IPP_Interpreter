@@ -42,3 +42,10 @@ class Frame():
         else:
             raise InterpreterInternalError("Chyba: Neznama chyba pri ziskavani typu promenne!")
 
+
+    def GetInitializedVarsCount(self):
+        count = 0
+        for var in self.variables:
+            if(self.variables[var] is not None):
+                count += 1
+        return count

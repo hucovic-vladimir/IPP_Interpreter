@@ -69,3 +69,9 @@ class InterpreterInternalError(Exception):
        def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+
+# Vyvolana pri provedeni instrukce EXIT
+class ExitInstruction(Exception):
+    def __init__(self, code):
+        self.code = code
+

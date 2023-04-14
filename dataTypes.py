@@ -301,12 +301,7 @@ class IPPInt(int):
         return IPPInt(super().__mul__(other)) 
 
     def __truediv__(self, other):
-        if(not isinstance (other, IPPInt)):
-            raise OperandTypeError(f"Chyba: Pokus o deleni hodnoty IPPInt typem {other.__class__.__name__}")
-        try:
-            return IPPFloat(super().__truediv__(other))
-        except ZeroDivisionError:
-            raise OperandValueError(f"Chyba: Deleni nulou!")
+        raise OperandTypeError(f"Chyba: Pokus o deleni hodnoty IPPInt typem {other.__class__.__name__}")
 
     def __floordiv__(self, other):
         if(not isinstance (other, IPPInt)):

@@ -14,6 +14,13 @@ class InterpreterData:
         # slovnik navesti
         self.labels = {}
 
+
+    def GetInitializedVarsCount(self) -> int:
+        gfCount = self.globalFrame.GetInitializedVarsCount()
+        tfCount = self.tempFrame.GetInitializedVarsCount() if self.tempFrame is not None else 0
+        lfCount = self.frameStack.top().GetInitializedVarsCount() if not self.frameStack.empty() else 0
+        return gfCount + tfCount + lfCount
+
     def CreateFrame(self):
         self.tempFrame = Frame()
 
@@ -34,15 +41,18 @@ class InterpreterData:
         return self.labels[label]
     
     def AddVariable(self, varName: str) -> None:
-        frameType = varName.split("@")[0]
-        varName = varName.split("@")[1]
-        frame = self._GetFrame(frameType)
+        split = varName.split("@")
+        if(len(split) != 2):
+            raise XMLInputError("Chyba: Neplatny nazev promenne!")
+        frameType = split[0]
+        varName = split[1] 
+        frame = self._getFrame(frameType)
         frame.AddVariable(varName)
 
     def UpdateVariable(self, varName: str, value: Union[IPPString, IPPInt, IPPFloat, IPPBool, Nil]) -> None:
         frameType = varName.split("@")[0]
         varName = varName.split("@")[1]
-        frame = self._GetFrame(frameType)
+        frame = self._getFrame(frameType)
         frame.UpdateVariable(varName, value)
 
     def GetInstructionPointer(self):
@@ -76,18 +86,41 @@ class InterpreterData:
     def GetVariableType(self, varName: str) -> str:
         frame = varName.split("@")[0]
         name = varName.split("@")[1]
-        return self._GetFrame(frame).GetVariableType(name)
+        return self._getFrame(frame).GetVariableType(name)
 
     def GetVariableValue(self, varName: str) -> Union[IPPString, IPPInt, IPPFloat, IPPBool, Nil]:
         frame = varName.split("@")[0]
         name = varName.split("@")[1]
-        value = self._GetFrame(frame).GetVariableValue(name)
+        value = self._getFrame(frame).GetVariableValue(name)
         if(value is None):
             raise MissingValueError("Chyba: Pristup k neinicializovane promenne!")
         return value
+  
+    def GetArgumentValue(self, arg: Argument) -> Union[IPPInt, IPPFloat, IPPBool, IPPString, Nil]:
+        if(isinstance(arg.value, VarName)):
+            return self.GetVariableValue(arg.value.name)
+        else:
+            return arg.value
+
+    def GetArgumentType(self, arg: Argument) -> str:
+        if(isinstance(arg.value, VarName)):
+            return self.GetVariableType(arg.value.name)
+        else:
+            if(isinstance(arg.value, IPPInt)):
+                return "int"
+            elif(isinstance(arg.value, IPPFloat)):
+                return "float"
+            elif(isinstance(arg.value, IPPBool)):
+                return "bool"
+            elif(isinstance(arg.value, IPPString)):
+                return "string"
+            elif(isinstance(arg.value, Nil)):
+                return "nil"
+            else:
+                raise InterpreterInternalError("Chyba: Neplatny typ argumentu!")
 
 
-    def _GetFrame(self, frame: str):
+    def _getFrame(self, frame: str):
         if(frame == "GF"):
             return self.globalFrame
         elif(frame == "LF"):

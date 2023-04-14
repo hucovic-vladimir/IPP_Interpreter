@@ -23,19 +23,21 @@ class Argument:
 class ArgumentFactory:
     @classmethod
     def Create(cls, arg: et.Element) -> Optional[Argument]:
-        type = arg.attrib["type"]
+        type = arg.attrib.get("type")
+        if(type is None):
+            raise XMLInputError("Chyba: Chybejici typ argumentu!")
         if(type == "var"):
             if(arg.text is None):
-                return None
+                raise XMLInputError("Chyba: Chybejici hodnota argumentu!")
             return Argument(VarName(arg.text.strip()))
         elif (type == "int" or type == "float" or type == "bool" or type == "string" or type == "nil"):
             return ArgumentFactory.CreateConstantArgument(arg)
         elif (type == "type" or type == "label"):
             if(arg.text is None):
-                return None
+                raise XMLInputError(f"Chyba: chybejici hodnota argumentu!")
             return Argument(IPPString(arg.text.strip()))
         else:
-            return None
+            raise XMLInputError(f"Chyba: Neplatny typ argumentu! {type}")
 
     @classmethod
     def CreateConstantArgument(cls, arg: et.Element) -> Optional[Argument]:
