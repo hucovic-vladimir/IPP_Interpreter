@@ -1,5 +1,6 @@
-from typing import Any, List, Union, Tuple
+from typing import Any, List
 
+# Třída pro zásobník
 class Stack:
     def __init__(self) -> None:
         self.stack: List[Any] = []

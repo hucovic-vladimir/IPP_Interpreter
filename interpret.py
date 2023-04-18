@@ -1,18 +1,17 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
 import sys
 import xml.etree.ElementTree as et
 import argparse as ap
-from typing import List, Optional, Any
+from typing import List
 from interpreter import *
-from frame import *
-from stack import *
 from instruction import *
-import re 
-from dataTypes import *
 
 
 # FIXME doplnit jmeno, login, odstranit zbytecne importy, upravit Interpreter
 
-
+# argparse akce pro zpracování argumentů z rozšíření STATI
 class GetStatsArgs(ap.Action):
     def __call__(self, parser, namespace, values, optionString):
         if(optionString=="--stats"):
@@ -25,6 +24,7 @@ class GetStatsArgs(ap.Action):
             if(not hasattr(namespace, "statsFile")):
                 print(f"Nalezen argument pro statistiku {optionString} bez přechozího '--stats'!", file=sys.stderr)
                 exit(10)
+            # Vytvoří v jmenném prostoru seznam pro požadované statistiky 
             if(not hasattr(namespace, "stats")):
                 setattr(namespace, "stats", [])
             if(optionString=="--print"):
@@ -33,6 +33,7 @@ class GetStatsArgs(ap.Action):
             else:
                 namespace.stats.append(optionString)
 
+# Získá argumenty příkazové řádky
 def getArguments() -> ap.Namespace:
     help = """
 Skript načte XML reprezentaci programu v jazyce IPPCode23 a tento program s využitím vstupu dle parametrů
@@ -43,12 +44,12 @@ Volitelné argumenty:
   --input <file>    Cesta k souboru se vstupy pro program (Výchozí je standardní vstup)
   --source <file>   Cesta ke vstupnímu souboru s XML reprezentací programu (Výchozí je standardní vstup)
   --help            Vypíše tuto nápovědu
-  --print <string>  Vypíše do souboru se statistikami řetězec <string>
   --stats <file>    Jmeno souboru, do ktereho budou zapsany statistiky
+  --print <string>  Vypíše do souboru se statistikami řetězec <string>
   --hot             Vypíše do souboru se statistikami nejčastěji používané instrukce
   --insts           Vypíše do souboru se statistikami počet provedených instrukcí
   --vars            Vypíše do souboru nejvyšší počet definovaných proměnných ve všech rámcích
-  --frequent        Vypíše do souboru se statistikami nejčastěji používané instrukce
+  --frequent        Vypíše do souboru se statistikami nejčastěji se vyskytující operační kód v programu
   --eol             Vypíše do souboru se statistikami odřádkování
     """
 
@@ -60,7 +61,8 @@ Volitelné argumenty:
                   help="Cesta ke vstupnímu souboru s XML reprezentací programu (Výchozí je standardní vstup)")
     optionalArgs.add_argument("--help", action="store_true",
                         help="Vypíše tuto nápovědu")
-    #STATI rozsireni
+
+    #STATI
     optionalArgs.add_argument("--print", metavar="<string>", action=GetStatsArgs, nargs=1, help="Vypíše do souboru se statistikami řetězec <string>")
     optionalArgs.add_argument("--stats", metavar="<file>", action=GetStatsArgs, nargs=1, help="Jmeno souboru, do ktereho budou zapsany statistiky")
     optionalArgs.add_argument("--hot", action=GetStatsArgs, nargs=0, help="Vypíše do souboru se statistikami nejčastěji používané instrukce")
@@ -69,7 +71,7 @@ Volitelné argumenty:
     optionalArgs.add_argument("--frequent", action=GetStatsArgs, nargs=0, help="Vypíše do souboru se statistikami nejčastěji používané instrukce")
     optionalArgs.add_argument("--eol", action=GetStatsArgs, nargs=0, help="Vypíše do souboru se statistikami odřádkování")
     
-    # Zpracovani argumentu
+    # Zpracování argumentů
     try:
         args = parser.parse_args()
     except ap.ArgumentError:
@@ -78,7 +80,7 @@ Volitelné argumenty:
     except SystemExit as e:
         exit(10)
       
-    # Kontrol jestli neni --help zadan s jinymi argumenty
+    # Kontrola jestli není --help zadán s jinými argumenty
     if args.help and len([value for value in vars(args).values() if value]) > 1:
         print("Parametr --help nelze použít s jinými parametry!", file=sys.stderr)
         exit(10)
@@ -96,14 +98,14 @@ Volitelné argumenty:
    
 # Kontrola struktury XML
 def checkXML(root: et.Element) -> bool:
-    # Chybny korenovy element
+    # Chybný kořenový element
     if(root.tag != "program"):
         raise XMLInputError(f"Neočekávaný element: {root.tag}, očekáván '<program>!'")
     # Chybi language atribut
     if("language" not in root.attrib):
         raise XMLInputError("Chyba: Element 'program' neobsahuje atribut 'language'!")
 
-    # Chybna hodnota language atributu
+    # Chybná hodnota language atributu
     if(root.attrib["language"].lower() != "ippcode23"):
         raise XMLInputError("Chyba: Element 'program' obsahuje chybný atribut 'language'!")
 
@@ -113,9 +115,10 @@ def checkXML(root: et.Element) -> bool:
         if(element.tag != "instruction"):
             raise XMLInputError(f"Neočekávaný element: {element.tag}, očekáván '<instruction>!'")
         else:
+            # Chybný atribut order
             if("order" not in element.attrib):
                 raise XMLInputError("Chyba: Instrukce neobsahuje atribut 'order'!")
-            if(not element.attrib["order"].isdigit()):
+            if(not element.attrib["order"].strip().isdigit()):
                 raise XMLInputError("Chyba: Atribut 'order' není celé číslo!")
             if(int(element.attrib["order"]) in order):
                 raise XMLInputError("Chyba: Duplicitní pořadí instrukce!")
@@ -128,8 +131,8 @@ def checkXML(root: et.Element) -> bool:
 
 
 
-if (__name__ == "__main__"):
-    # Zpracovani argumentu prikazove radky
+if __name__ == "__main__":
+    # Zpracování argumentů příkazové řádky
     args = getArguments()
     if(args.source):
         sourceXMLFile = args.source[0]
@@ -154,8 +157,6 @@ if (__name__ == "__main__"):
         print("XML soubor není dobře formovaný!", file=sys.stderr)
         exit(31)
 
-
-
     # Ziskani korene a kontrola struktury
     root = tree.getroot()
     try:
@@ -165,16 +166,16 @@ if (__name__ == "__main__"):
         exit(32)
 
     instructions = root.findall("instruction")
-    # Serazeni instrukci podle poradi
+    # Seřezení instrukcí podle pořadí
     sortedInstructions = sorted(instructions, key=lambda e: int(e.attrib["order"]))        
 
-    # vytvoreni interpretu
+    # Vytvoření objektu interpretu
     if(hasattr(args, "statsFile")):
         interpreter = StatisticsCollectingInterpreter(inputFile)
     else:
         interpreter = Interpreter(inputFile)
 
-    # Vytvoreni objektu instrukci
+    # Vytvorení objektů instrukcí
     instructionObjects: List[Instruction] = []
     for element in sortedInstructions:
         try:
@@ -186,13 +187,14 @@ if (__name__ == "__main__"):
 
 
     interpreter.AddInstructions(instructionObjects)
-
-
+    # Interpretace
     result = interpreter.Interpret()
     if(result == False):
-        print(interpreter.errorMessage, file=sys.stderr)
-        exit(interpreter.errorCode)
+        if(interpreter.errorMessage is not None):
+            print(interpreter.errorMessage, file=sys.stderr)
+            exit(interpreter.errorCode)
 
+    # Případné výpisy statistik 
     if(hasattr(args, "statsFile")):
         try:
             file = open(args.statsFile, "w")
@@ -218,4 +220,7 @@ if (__name__ == "__main__"):
                     else:
                         pass
 
-    exit(interpreter.errorCode)
+    if(interpreter.errorCode is not None):
+        exit(interpreter.errorCode)
+    else:
+        exit(0)

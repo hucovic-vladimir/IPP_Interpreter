@@ -1,6 +1,7 @@
 from exceptions import *
 from typing import Union
 
+# Typ nil@nil v IPPCode23
 class Nil:
     def __init__(self):
         pass
@@ -47,8 +48,9 @@ class Nil:
     def __and__(self, other):
         raise OperandTypeError("Chyba: Pokus o AND s nil!")
 
+# Typ bool v IPPCode23
 class IPPBool:
-    def __init__(self, value: bool) -> None:
+    def __init__(self, value: bool):
         self.value = value
 
     def __bool__(self):
@@ -103,9 +105,10 @@ class IPPBool:
         if(not isinstance (other, IPPBool)):
             raise OperandTypeError(f"Chyba: Nelze pouzit logicky OR na typ IPPBool a typ {other.__class__.__name__}")
         return IPPBool(self.value or other.value)
-    
+
+# Typ string v IPPCode23
 class IPPString(str):
-    # IPPString vytvoreny pres tuto metodu nenahradi escape sekvence - pouziva se pri nacteni retezce ze vstupu od uzivatele
+    # IPPString vytvořený přes tuto metodu nenahradí escape sekvence - používá se při načítání řetězce ze vstupu od uživatele
     @classmethod
     def CreateFromRead(cls, string: str):
         return super().__new__(cls, string)
@@ -174,7 +177,8 @@ class IPPString(str):
 
     def __bool__(self):
         raise OperandTypeError(f"Chyba: Nelze konvertovat typ {self.__class__.__name__} na bool!")
-    
+   
+    # Nahradí escape sekvence v IPPCode23 řetězci - metoda je volána při vytváření IPPStringu
     @staticmethod
     def replaceEscapeSequences(string: str):
         outputString = ""
@@ -192,7 +196,7 @@ class IPPString(str):
             i += 1
         return outputString
 
-
+# Typ float v IPPCode23
 class IPPFloat(float):
     def __new__(cls, value: Union[float, str]):
         if(isinstance(value, str)):
@@ -266,7 +270,7 @@ class IPPFloat(float):
 
     def __and__(self, other):
         raise OperandTypeError("Chyba: Nelze porovnavat typ float s typem bool!")
-    
+# Typ int v IPPCode23    
 class IPPInt(int):
     def __new__(cls, value: Union[int, str]):
         if(isinstance(value, str)):
@@ -341,7 +345,7 @@ class IPPInt(int):
         return IPPBool(super().__lt__(other))
 
     def __bool__(self):
-        raise OperandTypeError("Chyba: Nelze konvertovat int na bool!")
+        raise OperandTypeError("Chyba: Nelze konvertovat IPPInt na bool!")
 
     def __or__(self, other):
         raise OperandTypeError(f"Chyba: Nelze provest logicky OR typu IPPInt s typem {other.__class__.__name__}")

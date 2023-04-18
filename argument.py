@@ -1,12 +1,11 @@
 import xml.etree.ElementTree as et
-import sys
-from typing import Union, Optional, List
+from typing import Union, Optional
 from dataTypes import *
 
 # Tato třída reprezentuje jméno proměnné
 class VarName:
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name:str  = name
 
     def __str__(self) -> str:
         return f"{self.name}"
@@ -14,13 +13,14 @@ class VarName:
 # Tato třída reprezentuje argumenty instrukce
 # atribut type určuje, zda jde o proměnnou nebo konstantu 
 class Argument:
-    def __init__(self, value: Union[IPPFloat, IPPInt, IPPString, IPPBool, Nil, VarName]):
+    def __init__(self, value: Union[IPPFloat, IPPInt, IPPString, IPPBool, Nil, VarName]) -> None:
         self.value = value
 
     def __str__(self) -> str:
         return f"{self.value}"
 
 class ArgumentFactory:
+    # Pokusí se vytvořit objekt Argument ze vstupního XML elementu. Pokud najde chybu, je vyhozena výjimka
     @classmethod
     def Create(cls, arg: et.Element) -> Optional[Argument]:
         type = arg.attrib.get("type")
@@ -32,6 +32,7 @@ class ArgumentFactory:
             return Argument(VarName(arg.text.strip()))
         elif (type == "int" or type == "float" or type == "bool" or type == "string" or type == "nil"):
             return ArgumentFactory.CreateConstantArgument(arg)
+        # IPPString je použit pro uchování argumentů label a type
         elif (type == "type" or type == "label"):
             if(arg.text is None):
                 raise XMLInputError(f"Chyba: chybejici hodnota argumentu!")
@@ -39,6 +40,9 @@ class ArgumentFactory:
         else:
             raise XMLInputError(f"Chyba: Neplatny typ argumentu! {type}")
 
+    
+    # Pokusí se vytvořit objekt Argument ze vstupního XML elementu s konstantní hodnotou příslušného typu
+    # Pokud najde chybu, je vyhozena výjimka
     @classmethod
     def CreateConstantArgument(cls, arg: et.Element) -> Optional[Argument]:
         type = arg.attrib["type"]

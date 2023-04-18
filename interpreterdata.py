@@ -1,45 +1,61 @@
-from frame import *
+from frame import Frame
 from exceptions import *
-from argument import *
-from stack import *
+from argument import Argument, VarName
+from typing import Optional
+from dataTypes import *
+from stack import Stack
+
+# Data pro interpret
 class InterpreterData:
     def __init__(self, userInputStream):
+        # Vstupní stream pro instrukci READ
         self.userInputStream = userInputStream
-        self.instructionPointer = 0
-        self.globalFrame = Frame()
-        self.tempFrame = None
-        self.frameStack = Stack()
-        self.dataStack = Stack()
-        self.callStack = Stack()
+        # Ukazatel na další prováděnou instrukci
+        self.instructionPointer: int = 0
+        # Globální rámec
+        self.globalFrame: Frame = Frame()
+        # Lokální rámec
+        self.tempFrame: Optional[Frame] = None
+        # Zásobník rámců
+        self.frameStack: Stack = Stack()
+        # Datový zásobník
+        self.dataStack: Stack = Stack()
+        # Zásobník volání
+        self.callStack: Stack = Stack()
         # slovnik navesti
-        self.labels = {}
+        self.labels: dict[IPPString, int] = {}
 
-
+    # Získá počet inicializovaných proměnných ve všech rámcích
     def GetInitializedVarsCount(self) -> int:
         gfCount = self.globalFrame.GetInitializedVarsCount()
         tfCount = self.tempFrame.GetInitializedVarsCount() if self.tempFrame is not None else 0
         lfCount = self.frameStack.top().GetInitializedVarsCount() if not self.frameStack.empty() else 0
         return gfCount + tfCount + lfCount
 
-    def CreateFrame(self):
+    # Vytvoří dočasný rámec
+    def CreateFrame(self) -> None:
         self.tempFrame = Frame()
 
-    def PushFrame(self):
+    # Uloží dočasný rámec na zásobník
+    def PushFrame(self) -> None:
         if(self.tempFrame is None):
             raise MissingFrameError("Chyba: Pokus o ulozeni neexistujiciho ramce na zasobnik!")
         self.frameStack.push(self.tempFrame)
         self.tempFrame = None
 
-    def PopFrame(self):
+    # Uloží vrchní rámec ze zásobníku do dočasného rámce
+    def PopFrame(self) -> None:
         if(self.frameStack.empty()):
             raise MissingFrameError("Chyba: Pokus o ziskani ramce z prazdneho zasobniku!")
         self.tempFrame = self.frameStack.pop()
-
-    def GetJumpDestination(self, label: str):
+    
+    # Získá index daného návěští podle jména
+    def GetJumpDestination(self, label: str) -> int:
         if(label not in self.labels):
             raise UndefinedLabelError(f"Chyba: Navesti {label} neni definovano!")
         return self.labels[label]
-    
+   
+    # Přidá proměnnou do rámce (rámec je součástí jména proměnné)
     def AddVariable(self, varName: str) -> None:
         split = varName.split("@")
         if(len(split) != 2):
@@ -49,21 +65,26 @@ class InterpreterData:
         frame = self._getFrame(frameType)
         frame.AddVariable(varName)
 
+    # Aktualizuje hodnotu proměnné
     def UpdateVariable(self, varName: str, value: Union[IPPString, IPPInt, IPPFloat, IPPBool, Nil]) -> None:
         frameType = varName.split("@")[0]
         varName = varName.split("@")[1]
         frame = self._getFrame(frameType)
         frame.UpdateVariable(varName, value)
 
-    def GetInstructionPointer(self):
+    def GetUserInputStream(self):
+        return self.userInputStream
+
+    def GetInstructionPointer(self) -> int:
         return self.instructionPointer
-
-    def SetInstructionPointer(self, value):
+    
+    def SetInstructionPointer(self, value) -> None:
         self.instructionPointer = value
-
+    
     def PushDataStack(self, value):
         self.dataStack.push(value)
-        
+    
+    # Získá hodnotu z vrcholu datového zásobníku
     def PopDataStack(self) -> Union[IPPString, IPPInt, IPPFloat, IPPBool, Nil]:
         if(self.dataStack.empty()):
             raise MissingValueError("Chyba: Pristup k prazdnemu datovemu zasobniku!")
@@ -71,23 +92,24 @@ class InterpreterData:
    
     def ClearDataStack(self):
         self.dataStack.clear()
-
-    def PushCallStack(self, value):
+    
+    # Uloží hodnotu do zásobníku volání
+    def PushCallStack(self, value: int) -> None:
         self.callStack.push(value)
 
+    # Získá hodnotu z vrcholu zásobníku volání
     def PopCallStack(self):
         if(self.callStack.empty()):
             raise MissingValueError("Chyba: Volani funkce RETURN bez predchoziho volani CALL!")
         return self.callStack.pop()
-
-    def GetUserInputStream(self):
-        return self.userInputStream
-       
+    
+    # Vrátí typ uložený v proměnné daného jména
     def GetVariableType(self, varName: str) -> str:
         frame = varName.split("@")[0]
         name = varName.split("@")[1]
         return self._getFrame(frame).GetVariableType(name)
 
+    # Vrátí hodnotu uloženou v proměnné daného jména
     def GetVariableValue(self, varName: str) -> Union[IPPString, IPPInt, IPPFloat, IPPBool, Nil]:
         frame = varName.split("@")[0]
         name = varName.split("@")[1]
@@ -96,12 +118,15 @@ class InterpreterData:
             raise MissingValueError("Chyba: Pristup k neinicializovane promenne!")
         return value
   
+    # Vrátí hodnotu argument: v případě konstanty je to hodnota samotná, v případě proměnné se nalezne
+    # její aktuální hodnota v rámci
     def GetArgumentValue(self, arg: Argument) -> Union[IPPInt, IPPFloat, IPPBool, IPPString, Nil]:
         if(isinstance(arg.value, VarName)):
             return self.GetVariableValue(arg.value.name)
         else:
             return arg.value
 
+    # Získá datový typ argumentu
     def GetArgumentType(self, arg: Argument) -> str:
         if(isinstance(arg.value, VarName)):
             return self.GetVariableType(arg.value.name)
@@ -119,8 +144,9 @@ class InterpreterData:
             else:
                 raise InterpreterInternalError("Chyba: Neplatny typ argumentu!")
 
-
-    def _getFrame(self, frame: str):
+    
+    # Získá rámec podle jména
+    def _getFrame(self, frame: str) -> Frame:
         if(frame == "GF"):
             return self.globalFrame
         elif(frame == "LF"):
@@ -132,4 +158,4 @@ class InterpreterData:
                 raise MissingFrameError("Chyba: Pristup k docasnemu ramci, ktery neexistuje!")
             return self.tempFrame
         else:
-            raise InterpreterInternalError("Chyba: Neplatny ramec!")
+            raise XMLInputError("Chyba: Neplatny ramec!")
