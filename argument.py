@@ -21,8 +21,8 @@ class Argument:
 
 class ArgumentFactory:
     # Pokusí se vytvořit objekt Argument ze vstupního XML elementu. Pokud najde chybu, je vyhozena výjimka
-    @classmethod
-    def Create(cls, arg: et.Element) -> Optional[Argument]:
+    @staticmethod
+    def Create(arg: et.Element) -> Optional[Argument]:
         type = arg.attrib.get("type")
         if(type is None):
             raise XMLInputError("Chyba: Chybejici typ argumentu!")
@@ -43,8 +43,8 @@ class ArgumentFactory:
     
     # Pokusí se vytvořit objekt Argument ze vstupního XML elementu s konstantní hodnotou příslušného typu
     # Pokud najde chybu, je vyhozena výjimka
-    @classmethod
-    def CreateConstantArgument(cls, arg: et.Element) -> Optional[Argument]:
+    @staticmethod
+    def CreateConstantArgument(arg: et.Element) -> Optional[Argument]:
         type = arg.attrib["type"]
         if(type == "string"):
             if(arg.text is None):
