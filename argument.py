@@ -1,3 +1,6 @@
+# autor: Vladimír Hucovič
+# login: xhucov00
+
 import xml.etree.ElementTree as et
 from typing import Union, Optional
 from dataTypes import *

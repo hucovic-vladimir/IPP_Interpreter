@@ -1,3 +1,6 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
 from typing import List
 import xml.etree.ElementTree as et
 from argument import *

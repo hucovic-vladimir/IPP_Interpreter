@@ -1,3 +1,6 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
 # Chyba pri konverzi retezce na floating point cislo
 class InvalidStringToFloatError(Exception):
     def __init__(self, message):

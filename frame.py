@@ -1,3 +1,7 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
+
 from typing import Union
 from dataTypes import *
 from exceptions import *

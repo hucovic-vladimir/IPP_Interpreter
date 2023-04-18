@@ -1,3 +1,6 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
 from frame import Frame
 from exceptions import *
 from argument import Argument, VarName

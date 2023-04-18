@@ -1,3 +1,6 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
 from instruction import Instruction
 from interpreterdata import InterpreterData
 from instruction import *

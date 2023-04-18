@@ -1,3 +1,6 @@
+# Autor: Vladimír Hucovič
+# Login: xhucov00
+
 from typing import Any, List
 
 # Třída pro zásobník
