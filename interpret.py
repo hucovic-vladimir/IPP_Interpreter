@@ -38,7 +38,7 @@ def getArguments() -> ap.Namespace:
     help = """
 Skript načte XML reprezentaci programu v jazyce IPPCode23 a tento program s využitím vstupu dle parametrů
 příkazové řádky interpretuje a generuje výstup.
-použití: interpret.py [--input <file>] [--source <file>] [--help] [--print <string>] [--stats <file>] [--hot] [--insts] [--vars] [--frequent] [--eol]
+použití: interpret.py [--input <file>] [--source <file>] [--help] [--stats <file>] [--hot] [--insts] [--vars] [--frequent] [--eol] [--print <string>] 
 
 Volitelné argumenty:
   --input <file>    Cesta k souboru se vstupy pro program (Výchozí je standardní vstup)
